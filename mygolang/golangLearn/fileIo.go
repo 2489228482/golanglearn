@@ -1,13 +1,15 @@
 //https://studygolang.com/articles/10552
 package main
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"log"
+	"io"
 )
 
-func MakeFileByIoutil(){
+func CreateFileByIoutil(){
 	path := "./file/test1.txt"
 	fd := []byte("hello world 和罗咯 我忍了到")
 	//filemode表示文件存储的权限读写执行
@@ -17,6 +19,41 @@ func MakeFileByIoutil(){
 	}
 	fmt.Printf("sava finish\n")
 }
+
+func CreateFileByOS(){
+	//若文件已经存在，则往文件中追加内容
+	path := "./file/test2"
+	f,err := os.Create(path)
+	if err !=nil{
+		panic(err)
+	}
+	defer f.Close()
+	//使用字节写入
+	d := []byte{115,111,109,101,10}
+	n2,err := f.Write(d)
+	if err !=nil{
+		panic(err)
+	}
+	fmt.Printf("worte %d bytes\n",n2)
+
+
+	//使用支付串写入
+	n3,err := f.WriteString("hello world 和罗咯我忍了到")
+	fmt.Printf("wrote %d bytes\n",n3)
+
+	//以同步方式打开
+	f.Sync()
+	
+	w := bufio.NewWriter(f)
+	n4, err := w.WriteString("buffered\n")
+	fmt.Printf("wrote %d bytes \n",n4)
+
+	//将流中的缓存字符串发出去
+	w.Flush()
+
+
+}
+
 
 
 func ReadFileByIoutil(){
@@ -60,17 +97,38 @@ func ReadFileByOpen(){
 	if err != nil{
 		log.Fatal(err)
 	}
-	b := make([]byte,20)
+	//b长度不够会出现 hello world 和罗�� 
+	defer fd.Close()
+	b := make([]byte,200)
 	s,err := fd.Read(b)
-	fmt.Println(string(s))
-	os.Remove(path)
+	fmt.Printf("%d bytes: %s \n",s,string(b))
 
+	//Seek 游标
+	os2,err := fd.Seek(6,0)
+	if err != nil{
+		log.Fatal(err)
+	}
+	b2 := make([]byte,200)
+	s2,err := fd.Read(b2)
+	fmt.Printf("%d bytes @%d: %s \n",s2,os2,b2)
+
+    o3, err := fd.Seek(6, 0)
+    if err != nil{
+		log.Fatal(err)
+	}
+    b3 := make([]byte, 2)
+    n3, err := io.ReadAtLeast(fd, b3, 2)
+    if err != nil{
+		log.Fatal(err)
+	}
+    fmt.Printf("%d bytes @ %d: %s\n", n3, o3, string(b3))
 }
 
 
 func main(){
-	ReadFileByOpen()
+	CreateFileByOS()
+	// CreateFileByIoutil()
+	// ReadFileByIoutil()
 	//ReadFileByOpenFile()
-	//MakeFileByIoutil()
-	//ReadFileByIoutil()
+	//ReadFileByOpen()
 }
